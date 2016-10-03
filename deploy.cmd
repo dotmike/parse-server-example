@@ -30,6 +30,10 @@ IF NOT DEFINED DEPLOYMENT_TARGET (
   SET DEPLOYMENT_TARGET=%ARTIFACTS%\wwwroot
 )
 
+IF NOT DEFINED PUBLIC_DEPLOYMENT_TARGET (
+  SET PUBLIC_DEPLOYMENT_TARGET=%ARTIFACTS%\wwwroot\public
+)
+
 IF NOT DEFINED NEXT_MANIFEST_PATH (
   SET NEXT_MANIFEST_PATH=%ARTIFACTS%\manifest
 
@@ -63,7 +67,7 @@ IF DEFINED KUDU_SELECT_NODE_VERSION_CMD (
     SET /p NODE_EXE=<"%DEPLOYMENT_TEMP%\__nodeVersion.tmp"
     IF !ERRORLEVEL! NEQ 0 goto error
   )
-  
+
   IF EXIST "%DEPLOYMENT_TEMP%\__npmVersion.tmp" (
     SET /p NPM_JS_PATH=<"%DEPLOYMENT_TEMP%\__npmVersion.tmp"
     IF !ERRORLEVEL! NEQ 0 goto error
@@ -102,6 +106,18 @@ IF EXIST "%DEPLOYMENT_TARGET%\package.json" (
   pushd "%DEPLOYMENT_TARGET%"
   FOR /L %%A IN (1,1,3) DO (
     call !NPM_CMD! install --production
+    IF !ERRORLEVEL!==0 goto PublicBuild
+    IF %%A NEQ 3 SLEEP 5
+  )
+  goto error
+  popd
+ )
+
+:PublicBuild
+IF EXIST "%PUBLIC_DEPLOYMENT_TARGET%\package.json" (
+  pushd "%PUBLIC_DEPLOYMENT_TARGET%"
+  FOR /L %%A IN (1,1,3) DO (
+    call !NPM_CMD! run build
     IF !ERRORLEVEL!==0 goto npmInstallSuccess
     IF %%A NEQ 3 SLEEP 5
   )
